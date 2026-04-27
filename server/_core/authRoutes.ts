@@ -76,7 +76,7 @@ export function registerAuthRoutes(app: Express) {
       res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     } catch (error) {
       console.error("[Auth] Login error:", error);
-      res.status(500).json({ error: "Giriş başarısız" });
+      res.status(500).json({ error: "Giriş başarısız", detail: String(error) });
     }
   });
 }
