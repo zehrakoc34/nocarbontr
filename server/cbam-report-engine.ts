@@ -3,7 +3,7 @@
  * Generates PDF and XML reports for CBAM compliance
  */
 
-import { Score } from "../drizzle/schema";
+import { Score } from "./db";
 import { getUploadById, getSectorById, getScoresByUpload } from "./db";
 
 export interface CBamReportData {
