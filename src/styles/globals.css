@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === CSS CUSTOM PROPERTIES (Nocarbontr Design System) === */
+:root {
+  /* Backgrounds */
+  --bg-base:     #0D0D0D;
+  --bg-surface:  #111111;
+  --bg-card:     #1A1A1A;
+  --bg-elevated: #1E1E1E;
+  --bg-hover:    #242424;
+  --bg-input:    #161616;
+
+  /* Borders */
+  --border:        #2A2A2A;
+  --border-subtle: #1F1F1F;
+  --border-strong: #3A3A3A;
+
+  /* Brand */
+  --primary:       #22C55E;
+  --primary-hover: #16A34A;
+  --primary-glow:  rgba(34, 197, 94, 0.15);
+
+  /* Text */
+  --text-primary:   #FFFFFF;
+  --text-secondary: #D1D5DB;
+  --text-muted:     #9CA3AF;
+  --text-disabled:  #4B5563;
+
+  /* Status */
+  --success: #22C55E;
+  --danger:  #EF4444;
+  --warning: #F59E0B;
+  --info:    #3B82F6;
+
+  /* CBAM Risk */
+  --risk-low:      #22C55E;
+  --risk-medium:   #F59E0B;
+  --risk-high:     #EF4444;
+  --risk-critical: #DC2626;
+}
+
+/* === BASE RESETS === */
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-surface);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2A2A2A;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3A3A3A;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgba(34, 197, 94, 0.25);
+    color: #ffffff;
+  }
+}
+
+/* === COMPONENT LAYER === */
+@layer components {
+
+  /* Card */
+  .nctr-card {
+    @apply bg-bg-card border border-border rounded-xl p-5;
+  }
+  .nctr-card-elevated {
+    @apply bg-bg-elevated border border-border-strong rounded-xl p-5 shadow-card;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium
+           px-4 py-2 rounded-lg transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-bg-base;
+  }
+  .btn-secondary {
+    @apply bg-bg-card hover:bg-bg-hover border border-border
+           text-text-secondary hover:text-text-primary font-medium
+           px-4 py-2 rounded-lg transition-colors duration-150;
+  }
+  .btn-ghost {
+    @apply hover:bg-bg-hover text-text-muted hover:text-text-primary
+           px-3 py-1.5 rounded-lg transition-colors duration-150;
+  }
+  .btn-danger {
+    @apply bg-danger-bg hover:bg-red-900/40 border border-danger/30
+           text-danger-text font-medium px-4 py-2 rounded-lg transition-colors duration-150;
+  }
+
+  /* Badge / Status Pills */
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-success-bg text-success-text border border-success/20;
+  }
+  .badge-danger {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-danger-bg text-danger-text border border-danger/20;
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-warning-bg text-warning-text border border-warning/20;
+  }
+  .badge-info {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+           bg-info-bg text-info-text border border-info/20;
+  }
+
+  /* Input */
+  .nctr-input {
+    @apply w-full bg-bg-input border border-border rounded-lg px-3 py-2
+           text-text-primary placeholder:text-text-disabled text-sm
+           focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500
+           transition-colors duration-150;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-text-muted
+           hover:bg-bg-hover hover:text-text-primary transition-colors duration-150 cursor-pointer;
+  }
+  .nav-item-active {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+           bg-primary/10 text-primary border border-primary/20;
+  }
+
+  /* CBAM Risk indicator */
+  .risk-dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+  .risk-dot-low      { @apply bg-risk-low; }
+  .risk-dot-medium   { @apply bg-risk-medium; }
+  .risk-dot-high     { @apply bg-risk-high; }
+  .risk-dot-critical { @apply bg-risk-critical animate-pulse; }
+
+  /* Trust Score bar */
+  .trust-bar-track {
+    @apply w-full bg-bg-hover rounded-full h-1.5 overflow-hidden;
+  }
+  .trust-bar-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-500;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply nctr-card flex flex-col gap-1;
+  }
+  .stat-label {
+    @apply text-xs text-text-muted font-medium uppercase tracking-wide;
+  }
+  .stat-value {
+    @apply text-2xl font-bold text-text-primary tabular-nums;
+  }
+  .stat-delta-up   { @apply text-xs text-success; }
+  .stat-delta-down { @apply text-xs text-danger; }
+
+  /* Table */
+  .nctr-table {
+    @apply w-full text-sm;
+  }
+  .nctr-table thead tr {
+    @apply border-b border-border;
+  }
+  .nctr-table th {
+    @apply text-left text-xs font-medium text-text-muted uppercase tracking-wide py-3 px-4;
+  }
+  .nctr-table td {
+    @apply py-3 px-4 text-text-secondary border-b border-border-subtle;
+  }
+  .nctr-table tbody tr:hover td {
+    @apply bg-bg-hover text-text-primary;
+  }
+}
+
+/* === UTILITY LAYER === */
+@layer utilities {
+  .glow-green {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+  }
+  .glow-green-lg {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.2);
+  }
+  .text-gradient-green {
+    background: linear-gradient(135deg, #22C55E, #86EFAC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
