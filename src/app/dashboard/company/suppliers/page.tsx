@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { TrustScore } from "@/components/ui/TrustScore";
+import { InviteForm } from "./InviteForm";
+import { PasswordCell } from "./PasswordCell";
 
 export default async function SuppliersPage() {
   const supabase = await createClient();
@@ -12,17 +14,15 @@ export default async function SuppliersPage() {
     .from("org_members").select("org_id").eq("user_id", user.id).single();
   if (!member) redirect("/dashboard");
 
-  // Bağlı tedarikçiler + trust score + son emisyon
   const { data: connections } = await supabase
     .from("network_connections")
     .select(`
-      id, status, created_at,
+      id, status, created_at, temp_password, supplier_email,
       supplier:organizations!network_connections_supplier_id_fkey(id, name, tax_id, type)
     `)
     .eq("company_id", member.org_id)
     .order("created_at", { ascending: false });
 
-  // Her tedarikçi için trust score
   const supplierIds = (connections ?? [])
     .map((c: any) => c.supplier?.id)
     .filter(Boolean);
@@ -30,7 +30,7 @@ export default async function SuppliersPage() {
   const { data: trustScores } = await supabase
     .from("trust_scores")
     .select("supplier_id, score, evidence_score, continuity_score, benchmark_score")
-    .in("supplier_id", supplierIds);
+    .in("supplier_id", supplierIds.length ? supplierIds : ["00000000-0000-0000-0000-000000000000"]);
 
   const trustMap = Object.fromEntries(
     (trustScores ?? []).map((t: any) => [t.supplier_id, t])
@@ -45,7 +45,7 @@ export default async function SuppliersPage() {
             {(connections ?? []).length} bağlı tedarikçi
           </p>
         </div>
-        <InviteButton companyOrgId={member.org_id} />
+        <InviteForm companyOrgId={member.org_id} />
       </div>
 
       {!connections || connections.length === 0 ? (
@@ -64,8 +64,9 @@ export default async function SuppliersPage() {
             <thead>
               <tr>
                 <th>Tedarikçi</th>
-                <th>Vergi No</th>
+                <th>Email</th>
                 <th>Durum</th>
+                <th>Geçici Şifre</th>
                 <th>Trust Score</th>
                 <th>Kanıt</th>
                 <th>Süreklilik</th>
@@ -80,14 +81,26 @@ export default async function SuppliersPage() {
                       <p style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>
                         {c.supplier?.name ?? "—"}
                       </p>
+                      {c.supplier?.tax_id && (
+                        <p style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", fontFamily: "monospace" }}>
+                          {c.supplier.tax_id}
+                        </p>
+                      )}
                     </td>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.8125rem" }}>
-                      {c.supplier?.tax_id}
+                    <td style={{ fontSize: "0.8125rem", color: "var(--color-text-secondary)" }}>
+                      {c.supplier_email ?? "—"}
                     </td>
                     <td>
                       <Badge variant={c.status === "ACTIVE" ? "success" : "warning"}>
                         {c.status === "ACTIVE" ? "Aktif" : "Bekliyor"}
                       </Badge>
+                    </td>
+                    <td>
+                      {c.temp_password ? (
+                        <PasswordCell password={c.temp_password} />
+                      ) : (
+                        <span style={{ color: "var(--color-text-disabled)", fontSize: "0.75rem" }}>—</span>
+                      )}
                     </td>
                     <td style={{ minWidth: "140px" }}>
                       <div className="flex items-center gap-2">
@@ -117,35 +130,5 @@ export default async function SuppliersPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function InviteButton({ companyOrgId }: { companyOrgId: string }) {
-  return (
-    <form action={async (fd: FormData) => {
-      "use server";
-      const supabase = await (await import("@/lib/supabase/server")).createClient();
-      const taxId = fd.get("tax_id") as string;
-      const { data: supplier } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("tax_id", taxId)
-        .eq("type", "SUPPLIER")
-        .single();
-      if (!supplier) return;
-      await supabase.from("network_connections").insert({
-        company_id: companyOrgId,
-        supplier_id: supplier.id,
-        status: "PENDING",
-      });
-    }} className="flex gap-2">
-      <input
-        name="tax_id"
-        placeholder="Tedarikçi Vergi No"
-        className="nctr-input"
-        style={{ width: "180px" }}
-      />
-      <button type="submit" className="btn-primary">Davet Et</button>
-    </form>
   );
 }

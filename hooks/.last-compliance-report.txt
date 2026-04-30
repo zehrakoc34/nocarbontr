@@ -1,0 +1,35 @@
+Nocarbontr Compliance Report — 2026-04-30 23:09:13
+PASS=15 FAIL=0 WARN=2
+---
+PASS  .env.local untracked
+PASS  JWT token kaynak kodda yok
+PASS  Browser client: yalnızca ANON_KEY
+PASS  formula_version kolonu migration'da mevcut
+PASS  Tüm emission insert'lerde formula_version var
+WARN  Geçersiz formula_version format: /Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:241:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:271:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:298:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:332:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:358:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:387:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:416:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:454:    formula_version:  "cbam-v2025",
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts:477:    formula_version:  "cbam-v2025",
+PASS  verification_hash kolonu migration'da mevcut
+PASS  verification_hash boş atama yok
+PASS  RLS: organizations migration'da mevcut
+PASS  RLS: network_connections migration'da mevcut
+PASS  RLS: emission_data migration'da mevcut
+PASS  RLS: evidence_vault migration'da mevcut
+PASS  auth_org_id() yardımcı fonksiyonu mevcut
+PASS  Dashboard sayfaları Server Component
+WARN  Büyük dosyalar (refactor değerlendir):\n    total (8572 satır)
+/Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts (479 satır)
+/Users/macpart/YZ/nocarbontr/src/lib/reports/xml-generator.ts (436 satır)
+/Users/macpart/YZ/nocarbontr/src/components/calculator/CBAMCalculator.tsx (426 satır)
+/Users/macpart/YZ/nocarbontr/src/constants/productAtlas.ts (415 satır)
+/Users/macpart/YZ/nocarbontr/src/components/calculator/ScopeCalculator.tsx (403 satır)
+/Users/macpart/YZ/nocarbontr/src/app/dashboard/supplier/emissions/page.tsx (311 satır)
+/Users/macpart/YZ/nocarbontr/src/app/dashboard/page.tsx (302 satır)
+PASS  Supabase REST API erişilebilir (HTTP 200)
+PASS  RLS: Anonim kullanıcı organizations erişemiyor

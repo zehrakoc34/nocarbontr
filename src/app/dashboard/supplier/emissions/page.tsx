@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { saveEmission, type SaveEmissionState } from "@/lib/calculations/actions";
+import { submitEmissionReport } from "@/lib/suppliers/actions";
 import { calculate, DEFAULT_FACTORS, SECTOR_LABELS } from "@/lib/calculations/engine";
 import { SectorFields } from "@/components/dashboard/SectorFields";
 import { Badge } from "@/components/ui/Badge";
@@ -93,7 +94,7 @@ export default function EmissionsPage() {
 
   // Kayıt başarılıysa sonuç ekranı
   if (state.result) {
-    return <SuccessScreen result={state.result} sector={sector} onNew={() => window.location.reload()} />;
+    return <SuccessScreen result={state.result} onNew={() => window.location.reload()} />;
   }
 
   return (
@@ -242,13 +243,41 @@ function FormulaDisplay({ sector }: { sector: Sector }) {
   );
 }
 
+function SubmitReportButton({ emissionId }: { emissionId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const [submitted, setSubmitted] = useState(false);
+
+  if (submitted) {
+    return (
+      <span style={{ fontSize: "0.875rem", color: "var(--color-primary-400)", fontWeight: 600 }}>
+        Onay bekleniyor
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={isPending}
+      onClick={() =>
+        startTransition(async () => {
+          await submitEmissionReport(emissionId);
+          setSubmitted(true);
+        })
+      }
+      className="btn-primary flex-1 justify-center"
+      style={{ opacity: isPending ? 0.7 : 1 }}
+    >
+      {isPending ? "Gönderiliyor…" : "Raporu Gönder"}
+    </button>
+  );
+}
+
 function SuccessScreen({
   result,
-  sector,
   onNew,
 }: {
   result: NonNullable<SaveEmissionState["result"]>;
-  sector: Sector;
   onNew: () => void;
 }) {
   return (
@@ -298,13 +327,14 @@ function SuccessScreen({
         </div>
 
         <div className="flex gap-3">
-          <button onClick={onNew} className="btn-primary flex-1 justify-center">
+          <SubmitReportButton emissionId={result.id} />
+          <button onClick={onNew} className="btn-secondary flex-1 justify-center">
             + Yeni Emisyon Girişi
           </button>
-          <a href="/dashboard" className="btn-secondary flex-1 justify-center" style={{ display: "flex", alignItems: "center" }}>
-            Dashboard'a Dön
-          </a>
         </div>
+        <a href="/dashboard" className="btn-ghost w-full justify-center" style={{ display: "flex", alignItems: "center", fontSize: "0.8125rem" }}>
+          Dashboard'a Dön
+        </a>
       </div>
     </div>
   );
