@@ -64,8 +64,9 @@ export const cbamRouter = router({
       }
 
       // Generate temp password
-      const tempPassword = nanoid(10);
+      const tempPassword = nanoid(12);
       const passwordHash = await bcrypt.hash(tempPassword, 12);
+      const tempPasswordEncoded = Buffer.from(tempPassword).toString('base64');
 
       // Create supplier user account
       const supplierUser = await sbInsert<User>('users', {
@@ -75,6 +76,7 @@ export const cbamRouter = router({
         passwordHash,
         loginMethod: 'email',
         role: 'supplier',
+        mustChangePassword: true,
         lastSignedIn: new Date().toISOString(),
       });
 
@@ -85,13 +87,14 @@ export const cbamRouter = router({
         importerId: ctx.user.id,
         name: input.name,
         email: input.email,
-        sectorId: 1, // fallback
+        sectorId: 1,
         sectorType: input.sectorCode,
         tier: input.tier,
         hsCode: cnCodes[0] ?? '',
         quantity: '0',
         unit: 'ton',
         onboardingStatus: 'active',
+        tempPasswordEncoded,
       });
 
       await sendSupplierInviteEmail(input.email, input.name, tempPassword).catch(() => {});
@@ -118,6 +121,7 @@ export const cbamRouter = router({
       sectorType: s.sectorType,
       tier: s.tier,
       onboardingStatus: s.onboardingStatus,
+      tempPassword: s.tempPasswordEncoded ? Buffer.from(s.tempPasswordEncoded, 'base64').toString('utf8') : null,
       createdAt: s.createdAt,
     }));
   }),
@@ -287,6 +291,52 @@ export const cbamRouter = router({
       'cbamAnnualReport',
       `userId=eq.${ctx.user.id}&order=year.desc`
     );
+  }),
+
+  // Supplier: change password (clears mustChangePassword + tempPasswordEncoded)
+  changePassword: protectedProcedure
+    .input(z.object({
+      currentPassword: z.string().min(1),
+      newPassword: z.string().min(8),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const users = await sbSelect<User>('users', `id=eq.${ctx.user.id}&limit=1`);
+      const user = users[0];
+      if (!user?.passwordHash) throw new Error('Kullanıcı bulunamadı');
+
+      const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+      if (!valid) throw new Error('Mevcut şifre hatalı');
+
+      const newHash = await bcrypt.hash(input.newPassword, 12);
+      await sbUpdate('users', `id=eq.${ctx.user.id}`, {
+        passwordHash: newHash,
+        mustChangePassword: false,
+      });
+
+      // Clear tempPasswordEncoded from supplier record
+      const suppliers = await sbSelect<CbamSupplier>('suppliers', `userId=eq.${ctx.user.id}&limit=1`);
+      if (suppliers[0]) {
+        await sbUpdate('suppliers', `id=eq.${suppliers[0].id}`, { tempPasswordEncoded: null });
+      }
+
+      return { success: true };
+    }),
+
+  // Supplier: get own profile (sector info from supplier record)
+  getMySupplierProfile: protectedProcedure.query(async ({ ctx }) => {
+    const suppliers = await sbSelect<CbamSupplier>('suppliers', `userId=eq.${ctx.user.id}&limit=1`);
+    const supplier = suppliers[0];
+    if (!supplier) return null;
+    const sector = CBAM_SECTORS.find(s => s.code === supplier.sectorType);
+    return {
+      id: supplier.id,
+      name: supplier.name,
+      email: supplier.email,
+      sectorCode: supplier.sectorType,
+      sectorDef: sector ?? null,
+      tier: supplier.tier,
+      mustChangePassword: ctx.user.mustChangePassword,
+    };
   }),
 
   // Supplier: get own submission history

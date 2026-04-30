@@ -8,6 +8,7 @@ export type User = {
   passwordHash: string | null;
   loginMethod: string | null;
   role: "user" | "admin" | "supplier";
+  mustChangePassword: boolean;
   createdAt: string;
   updatedAt: string;
   lastSignedIn: string;
@@ -76,6 +77,7 @@ export type Supplier = {
   invitationToken: string | null;
   invitationSentAt: string | null;
   invitationAcceptedAt: string | null;
+  tempPasswordEncoded: string | null;
   createdAt: string;
   updatedAt: string;
 };
