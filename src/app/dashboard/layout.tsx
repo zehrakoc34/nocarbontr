@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { signOut } from "@/lib/supabase/actions";
+import Link from "next/link";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -51,9 +52,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Nav */}
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => (
-            <a key={item.href} href={item.href} className="nav-item">
+            <Link key={item.href} href={item.href} className="nav-item">
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
