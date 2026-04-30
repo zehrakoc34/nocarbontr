@@ -7,7 +7,7 @@ export type User = {
   email: string | null;
   passwordHash: string | null;
   loginMethod: string | null;
-  role: "user" | "admin";
+  role: "user" | "admin" | "supplier";
   createdAt: string;
   updatedAt: string;
   lastSignedIn: string;
