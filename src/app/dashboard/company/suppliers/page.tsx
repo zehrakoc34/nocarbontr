@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { InviteForm } from "./InviteForm";
 import { SupplierAccordion, type SupplierRow } from "./SupplierAccordion";
@@ -12,26 +13,32 @@ export default async function SuppliersPage() {
     .from("org_members").select("org_id").eq("user_id", user.id).single();
   if (!member) redirect("/dashboard");
 
+  const admin = createAdminClient();
+
   const { data: connections } = await supabase
     .from("network_connections")
     .select(`
       id, status, created_at, temp_password, supplier_email,
-      supplier:supplier_id(id, name, tax_id, type, address, phone, contact_name)
+      supplier:supplier_id(id, name, tax_id, type)
     `)
     .eq("company_id", member.org_id)
     .order("created_at", { ascending: false });
 
-  const supplierIds = (connections ?? [])
-    .map((c: any) => c.supplier?.id)
-    .filter(Boolean);
+  // supplier_id'leri raw kolundan al (join null dönse bile güvenli)
+  const { data: rawConns } = await admin
+    .from("network_connections")
+    .select("supplier_id")
+    .eq("company_id", member.org_id);
+
+  const supplierIds = (rawConns ?? []).map((c: any) => c.supplier_id).filter(Boolean);
 
   const [trustRes, reportsRes] = await Promise.all([
-    supabase
+    admin
       .from("trust_scores")
       .select("supplier_id, score, evidence_score, continuity_score")
       .in("supplier_id", supplierIds.length ? supplierIds : ["00000000-0000-0000-0000-000000000000"]),
 
-    supabase
+    admin
       .from("emission_data")
       .select("id, supplier_id, sector, year, emissions_ton_co2, status, created_at, reviewed_at, rejection_note")
       .in("supplier_id", supplierIds.length ? supplierIds : ["00000000-0000-0000-0000-000000000000"])
@@ -48,20 +55,39 @@ export default async function SuppliersPage() {
     reportsBySupplier[r.supplier_id].push(r);
   }
 
-  const suppliers: SupplierRow[] = (connections ?? []).map((c: any) => ({
-    connectionId: c.id,
-    supplierId: c.supplier?.id ?? "",
-    name: c.supplier?.name ?? "—",
-    taxId: c.supplier?.tax_id ?? "—",
-    email: c.supplier_email ?? "—",
-    status: c.status,
-    tempPassword: c.temp_password ?? null,
-    address: c.supplier?.address ?? null,
-    phone: c.supplier?.phone ?? null,
-    contactName: c.supplier?.contact_name ?? null,
-    trust: trustMap[c.supplier?.id] ?? { score: 0, evidence_score: 0, continuity_score: 0 },
-    reports: reportsBySupplier[c.supplier?.id] ?? [],
-  }));
+  // org bilgilerini admin ile çek (join'a güvenmeden)
+  const { data: orgs } = supplierIds.length
+    ? await admin.from("organizations").select("id, name, tax_id").in("id", supplierIds)
+    : { data: [] };
+  const orgMap = Object.fromEntries((orgs ?? []).map((o: any) => [o.id, o]));
+
+  // network_connections tablosundan supplier_id'yi doğrudan al
+  const { data: fullConns } = await admin
+    .from("network_connections")
+    .select("id, supplier_id")
+    .eq("company_id", member.org_id);
+  const connToSupplier = Object.fromEntries(
+    (fullConns ?? []).map((c: any) => [c.id, c.supplier_id])
+  );
+
+  const suppliers: SupplierRow[] = (connections ?? []).map((c: any) => {
+    const sid = connToSupplier[c.id] ?? c.supplier?.id ?? "";
+    const org = orgMap[sid];
+    return {
+      connectionId: c.id,
+      supplierId: sid,
+      name: org?.name ?? c.supplier?.name ?? "—",
+      taxId: org?.tax_id ?? c.supplier?.tax_id ?? "—",
+      email: c.supplier_email ?? "—",
+      status: c.status,
+      tempPassword: c.temp_password ?? null,
+      address: null,
+      phone: null,
+      contactName: null,
+      trust: trustMap[sid] ?? { score: 0, evidence_score: 0, continuity_score: 0 },
+      reports: reportsBySupplier[sid] ?? [],
+    };
+  });
 
   const totalPending = suppliers.reduce(
     (n, s) => n + s.reports.filter((r) => r.status === "SUBMITTED").length,
