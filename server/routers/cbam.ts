@@ -6,6 +6,25 @@ import { sbSelect, sbInsert, sbUpdate } from "../supabaseClient";
 import { CBAM_SECTORS, calculateCbamEmissions, type CbamSectorCode } from "../cbamSectors";
 import type { User, Supplier, Score } from "../db";
 
+async function sendSupplierInviteEmail(to: string, name: string, tempPassword: string) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'nocarbontr <onboarding@resend.dev>',
+      to,
+      subject: 'nocarbontr – Tedarikçi Portal Erişiminiz',
+      html: `<p>Merhaba ${name},</p>
+<p>CBAM tedarikçi portalına davet edildiniz.</p>
+<p><b>E-posta:</b> ${to}<br/><b>Geçici Şifre:</b> <code>${tempPassword}</code></p>
+<p>Giriş yapmak için: <a href="https://nocarbontr-1.onrender.com/login">https://nocarbontr-1.onrender.com/login</a></p>
+<p>İlk girişte şifrenizi değiştirmenizi öneririz.</p>`,
+    }),
+  });
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type CbamScore = Score & { submissionStatus: string; cbamData: Record<string, unknown> | null };
@@ -74,6 +93,8 @@ export const cbamRouter = router({
         unit: 'ton',
         onboardingStatus: 'active',
       });
+
+      await sendSupplierInviteEmail(input.email, input.name, tempPassword).catch(() => {});
 
       return {
         supplierId: supplier.id,

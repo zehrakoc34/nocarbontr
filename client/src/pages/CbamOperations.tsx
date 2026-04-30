@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CBAM_SECTORS } from "@shared/cbamSectors";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import DashboardLayout from "@/components/DashboardLayout";
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
@@ -296,6 +297,7 @@ function ImporterDashboard() {
   const RATING_COLOR: Record<string, string> = { green: '#10b981', yellow: '#f59e0b', red: '#ef4444' };
 
   return (
+    <DashboardLayout>
     <div className="min-h-screen bg-slate-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold mb-1">CBAM Operasyon Merkezi</h1>
@@ -422,5 +424,6 @@ function ImporterDashboard() {
         </div>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

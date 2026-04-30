@@ -18,6 +18,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/cbam" component={CbamOperations} />
       <Route path="/suppliers/onboard" component={SupplierOnboarding} />
+      <Route path="/suppliers" component={SupplierOnboarding} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
