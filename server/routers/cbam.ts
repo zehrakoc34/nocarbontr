@@ -339,6 +339,35 @@ export const cbamRouter = router({
     };
   }),
 
+  // Importer: reset supplier password (generates new temp password)
+  resetSupplierPassword: protectedProcedure
+    .input(z.object({ supplierId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const suppliers = await sbSelect<CbamSupplier>(
+        'suppliers',
+        `id=eq.${input.supplierId}&importerId=eq.${ctx.user.id}&limit=1`
+      );
+      const supplier = suppliers[0];
+      if (!supplier) throw new Error('Tedarikçi bulunamadı veya yetki hatası');
+
+      const newPassword = nanoid(12);
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      const tempPasswordEncoded = Buffer.from(newPassword).toString('base64');
+
+      // Update user password
+      if (supplier.userId) {
+        await sbUpdate('users', `id=eq.${supplier.userId}`, {
+          passwordHash,
+          mustChangePassword: true,
+        });
+      }
+      await sbUpdate('suppliers', `id=eq.${input.supplierId}`, { tempPasswordEncoded });
+
+      await sendSupplierInviteEmail(supplier.email ?? '', supplier.name, newPassword).catch(() => {});
+
+      return { newPassword, email: supplier.email };
+    }),
+
   // Supplier: get own submission history
   getMySubmissions: protectedProcedure.query(async ({ ctx }) => {
     const scores = await sbSelect<CbamScore>(

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   LogOut, Users, Plus, CheckCircle, Clock, FileText, BarChart3,
   ChevronRight, Copy, Check, Eye, EyeOff, ShieldAlert,
-  Send, History, Factory
+  Send, History, Factory, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -437,6 +437,17 @@ function AddSupplierTab({ onSuccess }: { onSuccess: () => void }) {
 function SuppliersTab() {
   const suppliers = trpc.cbam.getMySuppliers.useQuery();
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
+  const [resetResults, setResetResults] = useState<Record<number, string>>({});
+
+  const resetMutation = trpc.cbam.resetSupplierPassword.useMutation({
+    onSuccess: (data, variables) => {
+      setResetResults(prev => ({ ...prev, [variables.supplierId]: data.newPassword ?? "" }));
+      setVisiblePasswords(prev => new Set([...prev, variables.supplierId]));
+      suppliers.refetch();
+      toast.success("Şifre sıfırlandı");
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const togglePassword = (id: number) => {
     setVisiblePasswords(prev => {
@@ -484,6 +495,7 @@ function SuppliersTab() {
               const sector = CBAM_SECTORS.find(sec => sec.code === s.sectorType);
               const status = STATUS[s.onboardingStatus] ?? { label: s.onboardingStatus, className: "bg-muted text-muted-foreground" };
               const pwVisible = visiblePasswords.has(s.id);
+              const displayPassword = resetResults[s.id] ?? s.tempPassword;
               return (
                 <div key={s.id} className="border border-border rounded-xl p-4 bg-card space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -503,20 +515,28 @@ function SuppliersTab() {
                     </div>
                   )}
                   {/* Password show/hide */}
-                  {s.tempPassword && (
+                  {displayPassword ? (
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-amber-700 font-medium">Geçici Şifre</p>
-                        <p className="font-mono text-sm text-amber-900">
-                          {pwVisible ? s.tempPassword : "•".repeat(s.tempPassword.length)}
+                        <p className="font-mono text-sm font-bold text-amber-900">
+                          {pwVisible ? displayPassword : "•".repeat(displayPassword.length)}
                         </p>
                       </div>
                       <button onClick={() => togglePassword(s.id)}
-                        className="text-amber-600 hover:text-amber-800 transition-colors flex-shrink-0"
+                        className="text-amber-600 hover:text-amber-800 transition-colors flex-shrink-0 p-1"
                         title={pwVisible ? "Gizle" : "Göster"}>
                         {pwVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  ) : (
+                    <button
+                      onClick={() => resetMutation.mutate({ supplierId: s.id })}
+                      disabled={resetMutation.isPending}
+                      className="w-full flex items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition-colors">
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {resetMutation.isPending ? "Sıfırlanıyor..." : "Şifre Sıfırla / Göster"}
+                    </button>
                   )}
                 </div>
               );
