@@ -131,7 +131,7 @@ export const cbamRouter = router({
     .input(z.object({
       sectorCode: z.enum(['steel','aluminium','cement','fertilizer','electricity','hydrogen']),
       reportingYear: z.number().int().min(2023).max(2030),
-      cbamData: z.record(z.union([z.number(), z.string()])),
+      cbamData: z.record(z.string(), z.union([z.number(), z.string()])),
     }))
     .mutation(async ({ ctx, input }) => {
       // Find supplier record for this user
