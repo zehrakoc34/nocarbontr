@@ -3,17 +3,13 @@ services:
     name: nocarbontr
     runtime: node
     buildCommand: npm install && npm run build
-    startCommand: node dist/index.js
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
-      - key: DATABASE_URL
+      - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
-      - key: JWT_SECRET
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_KEY
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
