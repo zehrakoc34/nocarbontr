@@ -111,3 +111,26 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# Eski proje dosyaları — Next.js projesine dahil değil
+client/
+server/
+shared/
+vite.config.ts
+vitest.config.ts
+drizzle.config.ts
+drizzle/
+railway.toml
+docker-compose.yml
+patches/
+supabase-migration.sql
+supabase-v2-migration.sql
+supabase-cbam-migration.sql
+todo.md
+DEPLOYMENT.md
+components.json
+.dockerignore
+.prettierignore
+.prettierrc
+.env.example
+.gitkeep
