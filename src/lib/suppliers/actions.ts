@@ -4,59 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
-// ─── Rastgele Geçici Şifre Üret ──────────────────────────────────────────────
 function generateTempPassword(length = 10): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#";
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
-}
-
-// ─── Resend ile Email Gönder ──────────────────────────────────────────────────
-async function sendInviteEmail(to: string, tempPassword: string, companyName: string) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return;
-
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "nocarbontr <noreply@nocarbontr.com>",
-      to: [to],
-      subject: `${companyName} sizi nocarbontr CBAM platformuna davet etti`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-          <div style="background: #0f1117; border-radius: 12px; padding: 32px; color: #fff;">
-            <h2 style="color: #22c55e; margin: 0 0 16px;">nocarbontr'a Hoş Geldiniz</h2>
-            <p style="color: #a1a1aa; margin: 0 0 24px;">
-              <strong style="color: #fff;">${companyName}</strong> firması sizi tedarikçi olarak CBAM emisyon raporlama platformuna davet etti.
-            </p>
-            <div style="background: #1a1d2e; border: 1px solid #2d2f3e; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-              <p style="margin: 0 0 8px; color: #a1a1aa; font-size: 13px;">Giriş Bilgileriniz:</p>
-              <p style="margin: 0 0 4px; color: #fff; font-size: 14px;">
-                <strong>E-posta:</strong> ${to}
-              </p>
-              <p style="margin: 0; color: #22c55e; font-size: 18px; font-weight: 700; font-family: monospace; letter-spacing: 1px;">
-                Geçici Şifre: ${tempPassword}
-              </p>
-            </div>
-            <p style="color: #a1a1aa; font-size: 13px; margin: 0 0 20px;">
-              Giriş yaptıktan sonra şifrenizi değiştirmenizi öneririz. Emisyon verilerinizi girerek CBAM uyumluluk sürecinizi başlatabilirsiniz.
-            </p>
-            <a href="https://nocarbontr.com/auth/login"
-               style="display: inline-block; background: #22c55e; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
-              Platforma Giriş Yap →
-            </a>
-          </div>
-        </div>
-      `,
-    }),
-  });
 }
 
 // ─── Tedarikçi Davet Et ──────────────────────────────────────────────────────
@@ -76,9 +30,6 @@ export async function inviteSupplier(
   const { data: member } = await supabase
     .from("org_members").select("org_id").eq("user_id", user.id).single();
   if (!member) return { error: "Organizasyon bulunamadı." };
-
-  const { data: companyOrg } = await supabase
-    .from("organizations").select("name").eq("id", member.org_id).single();
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   if (!email || !email.includes("@")) return { error: "Geçerli bir email adresi girin." };
@@ -121,7 +72,7 @@ export async function inviteSupplier(
     // Yeni org oluştur
     const { data: newOrg, error: orgError } = await admin
       .from("organizations")
-      .insert({ name: supplierName, type: "SUPPLIER" })
+      .insert({ name: supplierName, type: "SUPPLIER", tax_id: `AUTO-${Date.now()}` })
       .select("id")
       .single();
 
@@ -150,7 +101,7 @@ export async function inviteSupplier(
     } else {
       const { data: newOrg } = await admin
         .from("organizations")
-        .insert({ name: supplierName, type: "SUPPLIER" })
+        .insert({ name: supplierName, type: "SUPPLIER", tax_id: `AUTO-${Date.now()}` })
         .select("id")
         .single();
       if (!newOrg) return { error: "Organizasyon oluşturulamadı." };
@@ -170,15 +121,8 @@ export async function inviteSupplier(
 
   if (connError) return { error: `Bağlantı oluşturulamadı: ${connError.message}` };
 
-  // Email gönder
-  try {
-    await sendInviteEmail(email, tempPassword, companyOrg?.name ?? "Bir şirket");
-  } catch {
-    // Email gönderimi arka planda — kritik değil
-  }
-
   revalidatePath("/dashboard/company/suppliers");
-  return { success: true, message: `${email} adresine davet gönderildi.` };
+  return { success: true, message: `Tedarikçi oluşturuldu. Geçici şifre: ${tempPassword}` };
 }
 
 // ─── Emisyon Onay/Red ─────────────────────────────────────────────────────────
