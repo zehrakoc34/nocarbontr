@@ -18,7 +18,7 @@ export default async function SuppliersPage() {
     .from("network_connections")
     .select(`
       id, status, created_at, temp_password, supplier_email,
-      supplier:organizations!network_connections_supplier_id_fkey(id, name, tax_id, type)
+      supplier:supplier_id(id, name, tax_id, type)
     `)
     .eq("company_id", member.org_id)
     .order("created_at", { ascending: false });

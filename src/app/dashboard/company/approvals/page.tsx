@@ -15,7 +15,7 @@ export default async function ApprovalsPage() {
   // Bağlı tedarikçilerin ID'lerini al
   const { data: connections } = await supabase
     .from("network_connections")
-    .select("supplier_id, supplier:organizations!network_connections_supplier_id_fkey(id, name)")
+    .select("supplier_id, supplier:supplier_id(id, name)")
     .eq("company_id", member.org_id);
 
   const supplierIds = (connections ?? []).map((c: any) => c.supplier_id).filter(Boolean);
