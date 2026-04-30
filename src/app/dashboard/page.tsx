@@ -73,7 +73,7 @@ function CompanyDashboard({
         <StatCard
           label="Onay Bekleyen"
           value={String(data.pendingConnections)}
-          unit="bağlantı"
+          unit="rapor"
         />
       </div>
 

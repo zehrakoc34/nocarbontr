@@ -1,4 +1,4 @@
-Nocarbontr Compliance Report — 2026-04-30 23:09:13
+Nocarbontr Compliance Report — 2026-05-01 00:34:44
 PASS=15 FAIL=0 WARN=2
 ---
 PASS  .env.local untracked
@@ -23,13 +23,13 @@ PASS  RLS: emission_data migration'da mevcut
 PASS  RLS: evidence_vault migration'da mevcut
 PASS  auth_org_id() yardımcı fonksiyonu mevcut
 PASS  Dashboard sayfaları Server Component
-WARN  Büyük dosyalar (refactor değerlendir):\n    total (8572 satır)
+WARN  Büyük dosyalar (refactor değerlendir):\n    total (9125 satır)
 /Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts (479 satır)
 /Users/macpart/YZ/nocarbontr/src/lib/reports/xml-generator.ts (436 satır)
 /Users/macpart/YZ/nocarbontr/src/components/calculator/CBAMCalculator.tsx (426 satır)
 /Users/macpart/YZ/nocarbontr/src/constants/productAtlas.ts (415 satır)
 /Users/macpart/YZ/nocarbontr/src/components/calculator/ScopeCalculator.tsx (403 satır)
-/Users/macpart/YZ/nocarbontr/src/app/dashboard/supplier/emissions/page.tsx (311 satır)
+/Users/macpart/YZ/nocarbontr/src/app/dashboard/supplier/emissions/page.tsx (341 satır)
 /Users/macpart/YZ/nocarbontr/src/app/dashboard/page.tsx (302 satır)
 PASS  Supabase REST API erişilebilir (HTTP 200)
 PASS  RLS: Anonim kullanıcı organizations erişemiyor

@@ -56,13 +56,13 @@ export async function getSupplierDashboardData(orgId: string) {
 export async function getCorporateDashboardData(orgId: string) {
   const supabase = await createClient();
 
-  // Aktif bağlantılı tedarikçiler
+  // Tüm bağlantılı tedarikçiler (aktif veya bekleyen)
   const { data: connections } = await supabase
     .from("network_connections")
     .select("supplier_id, status")
-    .eq("company_id", orgId)
-    .eq("status", "ACTIVE");
+    .eq("company_id", orgId);
 
+  const activeConnections = (connections ?? []).filter((c) => c.status === "ACTIVE");
   const supplierIds = (connections ?? []).map((c) => c.supplier_id);
 
   if (supplierIds.length === 0) {
@@ -90,10 +90,10 @@ export async function getCorporateDashboardData(orgId: string) {
       .in("supplier_id", supplierIds),
 
     supabase
-      .from("network_connections")
+      .from("emission_data")
       .select("id")
-      .eq("company_id", orgId)
-      .eq("status", "PENDING"),
+      .in("supplier_id", supplierIds)
+      .eq("status", "SUBMITTED"),
   ]);
 
   const emissions = emissionsRes.data ?? [];
@@ -147,7 +147,7 @@ export async function getCorporateDashboardData(orgId: string) {
   return {
     totalEmissions,
     avgTrustScore: Math.round(avgTrustScore),
-    activeSuppliers: supplierIds.length,
+    activeSuppliers: activeConnections.length,
     supplierCount: supplierIds.length,
     emissionsBySector,
     topSuppliers,
