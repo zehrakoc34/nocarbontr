@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { archiveReport } from "./archive-action";
 
 // ─── Rapor Oluştur (1. adım) ──────────────────────────────────
 export type ReportHeaderState = { error?: string; reportId?: string };
@@ -192,7 +193,7 @@ export async function finalizeReport(reportId: string, formData: FormData) {
     .from("org_members").select("org_id").eq("user_id", user.id).single();
   if (!member) return;
 
-  await supabase
+  const { error } = await supabase
     .from("cbam_reports")
     .update({
       global_data_confirmation:       formData.get("global_data_confirmation") === "true",
@@ -206,6 +207,10 @@ export async function finalizeReport(reportId: string, formData: FormData) {
     })
     .eq("id", reportId)
     .eq("org_id", member.org_id);
+
+  if (!error) {
+    await archiveReport(reportId, member.org_id, user.id);
+  }
 
   revalidatePath(`/dashboard/company/reports/${reportId}`);
 }

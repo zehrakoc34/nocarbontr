@@ -199,6 +199,18 @@ export async function getSupplierNetwork(orgId: string) {
   }));
 }
 
+// ─── Corporate: Arşiv geçmişi ────────────────────────────────
+export async function getReportArchives(orgId: string, reportId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("reports_archive")
+    .select("id, version_number, checksum, xml_url, excel_url, zip_url, created_at")
+    .eq("report_id", reportId)
+    .eq("importer_id", orgId)
+    .order("version_number", { ascending: false });
+  return data ?? [];
+}
+
 // ─── Corporate: CBAM Raporları listesi ───────────────────────
 export async function getCorporateReports(orgId: string) {
   const supabase = await createClient();

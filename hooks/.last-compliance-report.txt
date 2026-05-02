@@ -1,4 +1,4 @@
-Nocarbontr Compliance Report — 2026-05-01 01:03:14
+Nocarbontr Compliance Report — 2026-05-01 01:14:13
 PASS=15 FAIL=0 WARN=2
 ---
 PASS  .env.local untracked
@@ -23,7 +23,7 @@ PASS  RLS: emission_data migration'da mevcut
 PASS  RLS: evidence_vault migration'da mevcut
 PASS  auth_org_id() yardımcı fonksiyonu mevcut
 PASS  Dashboard sayfaları Server Component
-WARN  Büyük dosyalar (refactor değerlendir):\n    total (9382 satır)
+WARN  Büyük dosyalar (refactor değerlendir):\n    total (9408 satır)
 /Users/macpart/YZ/nocarbontr/src/lib/calculations/cbam-engine.ts (479 satır)
 /Users/macpart/YZ/nocarbontr/src/lib/reports/xml-generator.ts (436 satır)
 /Users/macpart/YZ/nocarbontr/src/components/calculator/CBAMCalculator.tsx (426 satır)

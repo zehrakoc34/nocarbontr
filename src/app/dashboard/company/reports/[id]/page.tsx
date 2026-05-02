@@ -2,12 +2,22 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { deleteImportedGood, finalizeReport } from "@/lib/reports/actions";
+import { getReportArchives } from "@/lib/supabase/queries";
 import AddGoodForm from "./AddGoodForm";
 import AddEmissionForm from "./AddEmissionForm";
 import FinalizeForm from "./FinalizeForm";
+import ArchiveTab from "./ArchiveTab";
 
-export default async function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ReportDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab = "detail" } = await searchParams;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -16,7 +26,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
     .from("org_members").select("org_id").eq("user_id", user.id).single();
   if (!member) redirect("/dashboard");
 
-  // Raporu çek
   const { data: report } = await supabase
     .from("cbam_reports")
     .select("*")
@@ -26,7 +35,24 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
 
   if (!report) notFound();
 
-  // Malları ve emisyonları çek
+  const statusColor = report.status === "READY" ? "success"
+    : report.status === "SUBMITTED" ? "info" : "warning";
+  const isEditable = report.status === "DRAFT";
+
+  // ─── Arşiv sekmesi ───────────────────────────────────────────
+  if (tab === "archive") {
+    const archives = await getReportArchives(member.org_id, id);
+
+    return (
+      <div className="p-8 max-w-6xl mx-auto space-y-6">
+        <ReportHeader id={id} report={report} statusColor={statusColor} />
+        <TabNav id={id} active="archive" hasArchive={report.current_version > 0} />
+        <ArchiveTab reportId={id} archives={archives} />
+      </div>
+    );
+  }
+
+  // ─── Rapor detay sekmesi ──────────────────────────────────────
   const { data: goods } = await supabase
     .from("cbam_imported_goods")
     .select("*")
@@ -41,7 +67,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
         .in("good_id", goodIds)
     : { data: [] };
 
-  // Bu corporate'ın tedarikçilerindeki tesisleri çek (emisyon formu için)
   const { data: connections } = await supabase
     .from("network_connections")
     .select("supplier_id")
@@ -63,41 +88,10 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
     ])
   );
 
-  const statusColor = report.status === "READY" ? "success"
-    : report.status === "SUBMITTED" ? "info" : "warning";
-
-  const isEditable = report.status === "DRAFT";
-
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
-      {/* Başlık */}
-      <div className="flex items-start justify-between">
-        <div>
-          <a href="/dashboard/company/reports" className="btn-ghost inline-flex mb-3"
-            style={{ fontSize: "0.8125rem" }}>← Raporlara Dön</a>
-          <h1 className="text-2xl font-bold text-gradient-green">
-            CBAM Raporu — {report.year} {report.reporting_period}
-          </h1>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-            {report.declarant_name} · ID: <code style={{ color: "var(--color-primary-400)", fontSize: "0.8125rem" }}>
-              {id.slice(0, 8)}…
-            </code>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant={statusColor}>
-            {report.status === "DRAFT" ? "Taslak" : report.status === "READY" ? "Hazır" : "Gönderildi"}
-          </Badge>
-          <a
-            href={`/api/reports/${id}/xml`}
-            target="_blank"
-            className="btn-primary"
-            style={{ fontSize: "0.8125rem" }}
-          >
-            XML İndir (XSD v23.00)
-          </a>
-        </div>
-      </div>
+      <ReportHeader id={id} report={report} statusColor={statusColor} />
+      <TabNav id={id} active="detail" hasArchive={report.current_version > 0} />
 
       {/* Rapor Başlık Özeti */}
       <div className="nctr-card grid grid-cols-4 gap-6">
@@ -135,7 +129,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
 
           return (
             <div key={good.id} className="nctr-card space-y-4">
-              {/* Mal Başlığı */}
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
@@ -161,7 +154,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
                 )}
               </div>
 
-              {/* Emisyonlar */}
               {goodEmissions.length > 0 && (
                 <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--color-border-subtle)" }}>
                   <table className="nctr-table">
@@ -197,7 +189,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
                 </div>
               )}
 
-              {/* Emisyon ekle */}
               {isEditable && (
                 <AddEmissionForm goodId={good.id} installations={installations ?? []} />
               )}
@@ -205,7 +196,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           );
         })}
 
-        {/* Yeni Mal Ekle */}
         {isEditable && (
           <div className="nctr-card-elevated space-y-4">
             <p style={{ fontWeight: 600, fontSize: "0.9375rem", color: "var(--color-text-primary)" }}>
@@ -216,7 +206,6 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
         )}
       </div>
 
-      {/* İmzalama ve Onay */}
       {isEditable && (goods?.length ?? 0) > 0 && (
         <FinalizeForm reportId={id} onFinalize={finalizeReport} />
       )}
@@ -242,6 +231,78 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Paylaşımlı header bileşeni ───────────────────────────────
+function ReportHeader({
+  id, report, statusColor,
+}: {
+  id: string;
+  report: Record<string, any>;
+  statusColor: "success" | "info" | "warning";
+}) {
+  return (
+    <div className="flex items-start justify-between">
+      <div>
+        <a href="/dashboard/company/reports" className="btn-ghost inline-flex mb-3"
+          style={{ fontSize: "0.8125rem" }}>← Raporlara Dön</a>
+        <h1 className="text-2xl font-bold text-gradient-green">
+          CBAM Raporu — {report.year} {report.reporting_period}
+        </h1>
+        <p style={{ color: "var(--color-text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+          {report.declarant_name} · ID:{" "}
+          <code style={{ color: "var(--color-primary-400)", fontSize: "0.8125rem" }}>
+            {id.slice(0, 8)}…
+          </code>
+          {report.current_version > 0 && (
+            <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+              · Arşiv v{report.current_version}
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <Badge variant={statusColor}>
+          {report.status === "DRAFT" ? "Taslak" : report.status === "READY" ? "Hazır" : "Gönderildi"}
+        </Badge>
+        <a href={`/api/reports/${id}/xml`} target="_blank" className="btn-primary"
+          style={{ fontSize: "0.8125rem" }}>
+          XML İndir (XSD v23.00)
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab navigation ───────────────────────────────────────────
+function TabNav({ id, active, hasArchive }: { id: string; active: string; hasArchive: boolean }) {
+  const tabs = [
+    { key: "detail", label: "Rapor Detayı" },
+    { key: "archive", label: hasArchive ? "🗄️ Arşiv Geçmişi" : "Arşiv Geçmişi" },
+  ];
+
+  return (
+    <div style={{ borderBottom: "1px solid var(--color-border)", display: "flex", gap: "0.25rem" }}>
+      {tabs.map((t) => (
+        <a
+          key={t.key}
+          href={`/dashboard/company/reports/${id}?tab=${t.key}`}
+          style={{
+            padding: "0.6rem 1.25rem",
+            fontSize: "0.875rem",
+            fontWeight: active === t.key ? 600 : 400,
+            color: active === t.key ? "var(--color-primary-400)" : "var(--color-text-muted)",
+            borderBottom: active === t.key ? "2px solid var(--color-primary-400)" : "2px solid transparent",
+            marginBottom: "-1px",
+            textDecoration: "none",
+            transition: "color 0.15s",
+          }}
+        >
+          {t.label}
+        </a>
+      ))}
     </div>
   );
 }
